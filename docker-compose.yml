@@ -1,0 +1,59 @@
+version: '3.8'
+services:
+  emqx-enterprise:
+    image: emqx/emqx-enterprise:5.1.0
+    container_name: emqx
+    healthcheck:
+      test: ["CMD", "emqx", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+    ports:
+      - 1883:1883
+      - 18083:18083
+    volumes:
+      - $PWD/emqx/cluster.hocon:/opt/emqx/data/configs/cluster.hocon
+      - $PWD/emqx/api_secret:/opt/emqx/data/api_secret
+    environment:
+      EMQX_DASHBOARD__BOOTSTRAP_USERS_FILE: '"/opt/emqx/data/api_secret"'
+    depends_on:
+      mongo: 
+        condition: service_started   
+
+  mqttx-simulate:
+    image: emqx/mqttx-cli:v1.9.3
+    container_name: mqttx-simulate
+    volumes:
+      - $PWD/mqttx/logistics.js:/app/mqttx-simulate/logistics.js
+    command:
+      - /bin/sh
+      - -c
+      - |
+        mqttx simulate --file /app/mqttx-simulate/logistics.js -c 5 -h emqx-enterprise -im 1000
+    depends_on:
+      emqx-enterprise:
+        condition: service_healthy
+
+  mqttx-sub:
+    image: emqx/mqttx-cli:v1.9.3
+    container_name: mqttx-sub
+    command:
+      - /bin/sh
+      - -c
+      - |
+        mqttx sub -t 'mqttx/simulate/#' -v -h emqx-enterprise
+    depends_on:
+      emqx-enterprise:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:4.4.6
+    container_name: mongo
+    ports:
+      - 27017:27017
+    volumes:
+      - $PWD/mongo/init.js:/docker-entrypoint-initdb.d/init.js
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=public
+      - MONGO_INITDB_DATABASE=iot_data
