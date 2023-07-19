@@ -12,7 +12,7 @@ services:
       - 1883:1883
       - 18083:18083
     volumes:
-      - $PWD/emqx/cluster.hocon:/opt/emqx/data/configs/cluster.hocon
+      - $PWD/emqx:/opt/emqx/data/configs
       - $PWD/emqx/api_secret:/opt/emqx/data/api_secret
     environment:
       EMQX_DASHBOARD__BOOTSTRAP_USERS_FILE: '"/opt/emqx/data/api_secret"'

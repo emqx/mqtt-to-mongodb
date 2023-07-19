@@ -1,0 +1,3 @@
+emqx/*.config
+emqx/*.args
+emqx/*.bak
